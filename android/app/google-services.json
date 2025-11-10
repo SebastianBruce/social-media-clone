@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1005113099043",
+    "project_id": "socialmediaclone-6b37c",
+    "storage_bucket": "socialmediaclone-6b37c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1005113099043:android:8c56e92935376f0d8fc296",
+        "android_client_info": {
+          "package_name": "com.example.social_media_clone"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDh2eICnz01xe8yvOgsS27XuDaF6D7krp4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
