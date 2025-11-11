@@ -4,7 +4,7 @@ import 'package:social_media_clone/features/auth/data/firebase_auth_repo.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_states.dart';
 import 'package:social_media_clone/features/auth/presentation/pages/auth_page.dart';
-import 'package:social_media_clone/features/post/home/pages/home_page.dart';
+import 'package:social_media_clone/features/home/pages/home_page.dart';
 import 'package:social_media_clone/features/profile/data/firebase_profile_repo.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:social_media_clone/features/storage/data/firebase_storage_repo.dart';

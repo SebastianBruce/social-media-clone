@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:social_media_clone/features/post/home/components/my_drawer.dart';
+import 'package:social_media_clone/features/home/components/my_drawer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

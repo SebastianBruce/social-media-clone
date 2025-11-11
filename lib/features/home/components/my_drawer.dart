@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
-import 'package:social_media_clone/features/post/home/components/my_drawer_tile.dart';
+import 'package:social_media_clone/features/home/components/my_drawer_tile.dart';
 import 'package:social_media_clone/features/profile/presentation/pages/profile_page.dart';
 
 class MyDrawer extends StatelessWidget {
