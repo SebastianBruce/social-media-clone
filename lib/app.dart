@@ -5,6 +5,9 @@ import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_states.dart';
 import 'package:social_media_clone/features/auth/presentation/pages/auth_page.dart';
 import 'package:social_media_clone/features/post/home/pages/home_page.dart';
+import 'package:social_media_clone/features/profile/data/firebase_profile_repo.dart';
+import 'package:social_media_clone/features/profile/presentation/cubits/profile_cubit.dart';
+import 'package:social_media_clone/features/storage/data/firebase_storage_repo.dart';
 import 'package:social_media_clone/themes/light_mode.dart';
 
 /*
@@ -31,15 +34,32 @@ Check Auth State
 
 class MyApp extends StatelessWidget {
   // auth repo
-  final authRepo = FirebaseAuthRepo();
+  final firebaseAuthRepo = FirebaseAuthRepo();
+
+  // profile repo
+  final firebaseProfileRepo = FirebaseProfileRepo();
+
+  // storage repo
+  final firebaseStorageRepo = FirebaseStorageRepo();
 
   MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // provide cubit to app
-    return BlocProvider(
-      create: (context) => AuthCubit(authRepo: authRepo)..checkAuth(),
+    // provide cubits to app
+    return MultiBlocProvider(
+      providers: [
+        // auth cubit
+        BlocProvider<AuthCubit>(
+          create: (context) => AuthCubit(authRepo: firebaseAuthRepo)..checkAuth(),
+        ),
+
+        // profile cubit
+        BlocProvider<ProfileCubit>(
+          create: (context) =>
+              ProfileCubit(profileRepo: firebaseProfileRepo, storageRepo: firebaseStorageRepo),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: lightMode,
