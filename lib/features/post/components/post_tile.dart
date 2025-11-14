@@ -59,6 +59,40 @@ class _PostTileState extends State<PostTile> {
     }
   }
 
+  /*
+
+  LIKES
+
+  */
+
+  // user tapped like button
+  void toggleLikePost() {
+    final isLiked = widget.post.likes.contains(currentUser!.uid);
+
+    // optimistically like & update UI
+    setState(() {
+      if (isLiked) {
+        widget.post.likes.remove(currentUser!.uid); // like
+      } else {
+        widget.post.likes.add(currentUser!.uid); // unlike
+      }
+    });
+
+    // update like
+    postCubit.toggleLikePost(widget.post.id, currentUser!.uid).catchError((
+      error,
+    ) {
+      // if there's am error, revert back to original values
+      setState(() {
+        if (isLiked) {
+          widget.post.likes.add(currentUser!.uid); // revert unlike
+        } else {
+          widget.post.likes.remove(currentUser!.uid); // revert like
+        }
+      });
+    });
+  }
+
   // show options for deletion
   void showOptions() {
     showDialog(
@@ -153,6 +187,53 @@ class _PostTileState extends State<PostTile> {
           ),
 
           // buttons -> like, comment, timestamp
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 50,
+                  child: Row(
+                    children: [
+                      // like button
+                      GestureDetector(
+                        onTap: toggleLikePost,
+                        child: Icon(
+                          widget.post.likes.contains(currentUser!.uid)
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          color: widget.post.likes.contains(currentUser!.uid)
+                              ? Colors.red
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+
+                      const SizedBox(width: 5),
+
+                      // like count
+                      Text(
+                        widget.post.likes.length.toString(),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // comment button
+                Icon(Icons.comment),
+
+                Text("0"),
+
+                const Spacer(),
+
+                // timestamp
+                Text(widget.post.timestamp.toString()),
+              ],
+            ),
+          ),
         ],
       ),
     );
