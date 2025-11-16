@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/presentation/components/my_text_field.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
@@ -320,7 +321,11 @@ class _PostTileState extends State<PostTile> {
                 const Spacer(),
 
                 // timestamp
-                Text(widget.post.timestamp.toString()),
+                Text(
+                  DateFormat(
+                    'MM/dd/yyyy - hh:mm a',
+                  ).format(widget.post.timestamp),
+                ),
               ],
             ),
           ),

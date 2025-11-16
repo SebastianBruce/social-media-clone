@@ -9,8 +9,10 @@ import 'package:social_media_clone/features/post/data/firebase_post_repo.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/profile/data/firebase_profile_repo.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_cubit.dart';
+import 'package:social_media_clone/features/search/data/firebase_search_repo.dart';
+import 'package:social_media_clone/features/search/presentation/cubits/search_cubit.dart';
 import 'package:social_media_clone/features/storage/data/firebase_storage_repo.dart';
-import 'package:social_media_clone/themes/light_mode.dart';
+import 'package:social_media_clone/themes/theme_cubit.dart';
 
 /*
 
@@ -47,6 +49,9 @@ class MyApp extends StatelessWidget {
   // post repo
   final firebasePostRepo = FirebasePostRepo();
 
+  // search repo
+  final firebaseSearchRepo = FirebaseSearchRepo();
+
   MyApp({super.key});
 
   @override
@@ -75,39 +80,53 @@ class MyApp extends StatelessWidget {
             storageRepo: firebaseStorageRepo,
           ),
         ),
+
+        // search cubit
+        BlocProvider<SearchCubit>(
+          create: (context) => SearchCubit(searchRepo: firebaseSearchRepo),
+        ),
+
+        // theme cubit
+        BlocProvider<ThemeCubit>(create: (context) => ThemeCubit()),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: lightMode,
 
-        // unauthenticated -> auth page (login/register)
-        home: BlocConsumer<AuthCubit, AuthState>(
-          builder: (context, authState) {
-            print(authState);
-            if (authState is Unauthenticated) {
-              return const AuthPage();
-            }
+      // bloc builder: themes
+      child: BlocBuilder<ThemeCubit, ThemeData>(
+        builder: (context, currentTheme) => MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: currentTheme,
 
-            // authenticated -> home page
-            if (authState is Authenticated) {
-              return const HomePage();
-            }
-            // loading...
-            else {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-          },
+          // bloc builder: check current auth state
+          home: BlocConsumer<AuthCubit, AuthState>(
+            builder: (context, authState) {
+              print(authState);
 
-          // listen for errors..
-          listener: (context, state) {
-            if (state is AuthError) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.message)));
-            }
-          },
+              // unauthenticated -> auth page (login/register)
+              if (authState is Unauthenticated) {
+                return const AuthPage();
+              }
+
+              // authenticated -> home page
+              if (authState is Authenticated) {
+                return const HomePage();
+              }
+              // loading...
+              else {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+            },
+
+            // listen for errors..
+            listener: (context, state) {
+              if (state is AuthError) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(state.message)));
+              }
+            },
+          ),
         ),
       ),
     );
