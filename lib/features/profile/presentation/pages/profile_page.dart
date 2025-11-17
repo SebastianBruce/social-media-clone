@@ -13,6 +13,7 @@ import 'package:social_media_clone/features/profile/presentation/cubits/profile_
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_states.dart';
 import 'package:social_media_clone/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:social_media_clone/features/profile/presentation/pages/follower_page.dart';
+import 'package:social_media_clone/responsive/constrained_scaffold.dart';
 
 class ProfilePage extends StatefulWidget {
   final String uid;
@@ -90,7 +91,9 @@ class _ProfilePageState extends State<ProfilePage> {
         // profile loaded
         final user = state.profileUser;
 
-        return Scaffold(
+        // SCAFFOLD
+        return ConstrainedScaffold(
+          //APP BAR
           appBar: AppBar(
             title: Text(user.name),
             foregroundColor: Theme.of(context).colorScheme.primary,
@@ -108,6 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ],
           ),
 
+          // BODY
           body: BlocBuilder<PostCubit, PostState>(
             builder: (context, postState) {
               List userPosts = [];
