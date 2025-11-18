@@ -18,6 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   // text controllers
   final nameController = TextEditingController();
   final emailController = TextEditingController();
+  final usernameController = TextEditingController();
   final pwController = TextEditingController();
   final confirmPwController = TextEditingController();
 
@@ -26,6 +27,7 @@ class _RegisterPageState extends State<RegisterPage> {
     // prepare info
     final String name = nameController.text;
     final String email = emailController.text;
+    final String userName = usernameController.text;
     final String pw = pwController.text;
     final String confirmPw = confirmPwController.text;
 
@@ -39,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
         confirmPw.isNotEmpty) {
       // ensure password match
       if (pw == confirmPw) {
-        authCubit.register(name, email, pw);
+        authCubit.register(name, email, pw, userName);
       }
       // passwords don't match
       else {
@@ -101,6 +103,15 @@ class _RegisterPageState extends State<RegisterPage> {
                 MyTextField(
                   controller: nameController,
                   hintText: "Name",
+                  obscureText: false,
+                ),
+
+                const SizedBox(height: 10),
+
+                // name textfield
+                MyTextField(
+                  controller: usernameController,
+                  hintText: "Username",
                   obscureText: false,
                 ),
 

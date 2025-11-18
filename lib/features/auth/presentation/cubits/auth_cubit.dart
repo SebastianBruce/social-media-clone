@@ -9,7 +9,7 @@ import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/domain/repos/auth_repo.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_states.dart';
 
-class AuthCubit extends Cubit<AuthState>{
+class AuthCubit extends Cubit<AuthState> {
   final AuthRepo authRepo;
   AppUser? _currentUser;
 
@@ -29,11 +29,10 @@ class AuthCubit extends Cubit<AuthState>{
 
   // get current user
   AppUser? get currentUser => _currentUser;
-  
+
   // login with email + pw
   Future<void> login(String email, String pw) async {
     try {
-
       emit(AuthLoading());
       final user = await authRepo.loginWithEmailPassword(email, pw);
 
@@ -43,20 +42,27 @@ class AuthCubit extends Cubit<AuthState>{
       } else {
         emit(Unauthenticated());
       }
-    }
-    
-    catch (e) {
+    } catch (e) {
       emit(AuthError(e.toString()));
       emit(Unauthenticated());
     }
   }
 
-  // register with email + pw
-  Future<void> register(String name, String email, String pw) async {
+  // register with email + pw + username
+  Future<void> register(
+    String name,
+    String email,
+    String pw,
+    String usernameRaw,
+  ) async {
     try {
-
       emit(AuthLoading());
-      final user = await authRepo.registerWithEmailPassword(name, email, pw);
+      final user = await authRepo.registerWithEmailPassword(
+        name,
+        email,
+        pw,
+        usernameRaw: usernameRaw,
+      );
 
       if (user != null) {
         _currentUser = user;
@@ -64,9 +70,7 @@ class AuthCubit extends Cubit<AuthState>{
       } else {
         emit(Unauthenticated());
       }
-    }
-    
-    catch (e) {
+    } catch (e) {
       emit(AuthError(e.toString()));
       emit(Unauthenticated());
     }

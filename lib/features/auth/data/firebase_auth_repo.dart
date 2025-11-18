@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/domain/repos/auth_repo.dart';
+import 'package:social_media_clone/features/auth/data/username_utils.dart';
 
 class FirebaseAuthRepo implements AuthRepo {
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
@@ -20,15 +21,11 @@ class FirebaseAuthRepo implements AuthRepo {
           .doc(userCredential.user!.uid)
           .get();
 
-      // create user
-      AppUser user = AppUser(
-        uid: userCredential.user!.uid,
-        email: email,
-        name: userDoc['name'],
-      );
+      if (!userDoc.exists) return null;
 
-      // return user
-      return user;
+      // create user from doc
+      final data = userDoc.data() as Map<String, dynamic>;
+      return AppUser.fromJson(data);
     } catch (e) {
       throw Exception('Login failed: $e');
     }
@@ -38,30 +35,81 @@ class FirebaseAuthRepo implements AuthRepo {
   Future<AppUser?> registerWithEmailPassword(
     String name,
     String email,
-    String password,
-  ) async {
-    try {
-      // attempt sign up
-      UserCredential userCredential = await firebaseAuth
-          .createUserWithEmailAndPassword(email: email, password: password);
+    String password, {
+    required String usernameRaw,
+  }) async {
+    final username = normalizeUsername(usernameRaw);
 
-      // create user
-      AppUser user = AppUser(
-        uid: userCredential.user!.uid,
+    if (!isValidUsername(username)) {
+      throw Exception(
+        'Invalid username. Use 3-30 chars: lowercase letters, numbers, underscore.',
+      );
+    }
+
+    UserCredential? createdCredential;
+
+    try {
+      // Option A (recommended UX): check availability first to avoid creating orphan auth users
+      // Fast single-doc read
+      final usernameSnap = await firebaseFirestore
+          .collection('usernames')
+          .doc(username)
+          .get();
+
+      if (usernameSnap.exists) {
+        throw Exception('Username already taken');
+      }
+
+      // 1) create auth user
+      createdCredential = await firebaseAuth.createUserWithEmailAndPassword(
         email: email,
-        name: name,
+        password: password,
       );
 
-      // save user data in firestore
-      await firebaseFirestore
-          .collection("users")
-          .doc(user.uid)
-          .set(user.toJson());
+      final uid = createdCredential.user!.uid;
 
-      // return user
-      return user;
+      final newUser = AppUser(
+        uid: uid,
+        email: email,
+        name: name,
+        username: username,
+      );
+
+      final userDocRef = firebaseFirestore.collection('users').doc(uid);
+      final usernameDocRef = firebaseFirestore
+          .collection('usernames')
+          .doc(username);
+
+      // 2) run transaction to ensure username uniqueness and write both docs atomically
+      await firebaseFirestore.runTransaction((transaction) async {
+        final usernameSnapInTx = await transaction.get(usernameDocRef);
+        if (usernameSnapInTx.exists) {
+          // username taken -> abort (this handles rare race where someone took it between our earlier check and now)
+          throw Exception('Username already taken');
+        }
+
+        transaction.set(usernameDocRef, {'uid': uid});
+        transaction.set(userDocRef, newUser.toJson());
+      });
+
+      return newUser;
+    } on FirebaseAuthException catch (e) {
+      // auth error (bad email/password etc)
+      // map firebase errors as needed
+      throw Exception('Auth error: ${e.message}');
     } catch (e) {
-      throw Exception('Login failed: $e');
+      // cleanup: if we created an auth user but failed to write DB, delete auth user to avoid orphan
+      try {
+        final firebaseUser =
+            createdCredential?.user ?? firebaseAuth.currentUser;
+        if (firebaseUser != null) {
+          // Deleting requires recent sign-in; best-effort
+          await firebaseUser.delete();
+        }
+      } catch (_) {
+        // ignore cleanup errors
+      }
+      rethrow;
     }
   }
 
@@ -92,10 +140,51 @@ class FirebaseAuthRepo implements AuthRepo {
     }
 
     // user exists
-    return AppUser(
-      uid: firebaseUser.uid,
-      email: firebaseUser.email!,
-      name: userDoc['name'],
-    );
+    return AppUser.fromJson(userDoc.data() as Map<String, dynamic>);
+  }
+
+  // Check availability by looking up usernames/{username}
+  @override
+  Future<bool> isUsernameAvailable(String usernameRaw) async {
+    final username = normalizeUsername(usernameRaw);
+    if (!isValidUsername(username)) return false;
+    final snap = await firebaseFirestore
+        .collection('usernames')
+        .doc(username)
+        .get();
+    return !snap.exists;
+  }
+
+  // Change username safely
+  @override
+  Future<void> changeUsername({
+    required String uid,
+    required String currentUsername,
+    required String newUsernameRaw,
+  }) async {
+    final newUsername = normalizeUsername(newUsernameRaw);
+    if (!isValidUsername(newUsername)) {
+      throw Exception('Invalid username');
+    }
+
+    final newRef = firebaseFirestore.collection('usernames').doc(newUsername);
+    final oldRef = firebaseFirestore
+        .collection('usernames')
+        .doc(currentUsername);
+    final userRef = firebaseFirestore.collection('users').doc(uid);
+
+    await firebaseFirestore.runTransaction((tx) async {
+      final newSnap = await tx.get(newRef);
+      if (newSnap.exists) throw Exception('Username taken');
+
+      final oldSnap = await tx.get(oldRef);
+      if (!oldSnap.exists || oldSnap['uid'] != uid) {
+        throw Exception('Current username does not match user');
+      }
+
+      tx.set(newRef, {'uid': uid});
+      tx.delete(oldRef);
+      tx.update(userRef, {'username': newUsername});
+    });
   }
 }

@@ -12,7 +12,7 @@ class UserTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(user.name),
-      subtitle: Text(user.email),
+      subtitle: Text("@${user.username}"),
       subtitleTextStyle: TextStyle(
         color: Theme.of(context).colorScheme.primary,
       ),

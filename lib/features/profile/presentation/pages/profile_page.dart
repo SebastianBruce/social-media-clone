@@ -127,7 +127,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   // email
                   Center(
                     child: Text(
-                      user.email,
+                      "@${user.username}",
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),

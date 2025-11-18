@@ -232,7 +232,7 @@ class _PostTileState extends State<PostTile> {
 
                   // name
                   Text(
-                    widget.post.userName,
+                    "@${widget.post.handle}",
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.inversePrimary,
                       fontWeight: FontWeight.bold,
@@ -254,13 +254,20 @@ class _PostTileState extends State<PostTile> {
               ),
             ),
           ),
-          CachedNetworkImage(
-            imageUrl: widget.post.imageUrl,
-            height: 430,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            placeholder: (context, url) => const SizedBox(height: 430),
-            errorWidget: (context, url, error) => const Icon(Icons.error),
+          GestureDetector(
+            onDoubleTap: () {
+              if (!widget.post.likes.contains(currentUser!.uid)) {
+                toggleLikePost();
+              } else {}
+            },
+            child: CachedNetworkImage(
+              imageUrl: widget.post.imageUrl,
+              height: 430,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => const SizedBox(height: 430),
+              errorWidget: (context, url, error) => const Icon(Icons.error),
+            ),
           ),
 
           // buttons -> like, comment, timestamp

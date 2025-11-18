@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -----------------------
+    // USERS COLLECTION
+    // -----------------------
+    match /users/{userId} {
+
+      // Anyone can read public profile data
+      allow read: if true;
+
+      // User can create their own user document
+      allow create: if request.auth != null
+                 && request.auth.uid == userId;
+
+      // User can update their own document
+      allow update: if request.auth != null
+                 && request.auth.uid == userId;
+
+      // User can delete their own document
+      allow delete: if request.auth != null
+                 && request.auth.uid == userId;
+    }
+
+
+    // -----------------------
+    // USERNAMES COLLECTION
+    // -----------------------
+    match /usernames/{username} {
+
+      // Anyone can read to check availability
+      allow read: if true;
+
+      // Create only allowed if:
+      // 1) user is authenticated
+      // 2) username doc does NOT already exist
+      // 3) request.resource.data.uid matches the logged-in user
+      allow create: if request.auth != null
+                 && request.resource.data.uid == request.auth.uid
+                 && !exists(/databases/$(database)/documents/usernames/{username});
+
+      // Delete only by owner
+      allow delete: if request.auth != null
+                 && request.resource.data.uid == request.auth.uid;
+
+      // No updates allowed — usernames cannot change directly
+      allow update: if false;
+    }
+  }
+}
