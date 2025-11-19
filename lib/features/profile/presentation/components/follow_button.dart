@@ -15,40 +15,36 @@ To use this widget, you need:
 
 import 'package:flutter/material.dart';
 
-class FollowButton extends StatelessWidget {
+class ProfileActionButton extends StatelessWidget {
   final void Function()? onPressed;
-  final bool isFollowing;
+  final bool? isFollowing; // null if it's an edit button
 
-  const FollowButton({
+  const ProfileActionButton({
     super.key,
     required this.onPressed,
-    required this.isFollowing,
+    this.isFollowing,
   });
 
-  // BUILD UI
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      // padding on outside
-      padding: const EdgeInsets.symmetric(horizontal: 25.0),
+    final bool isEdit = isFollowing == null;
 
-      // button
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 25.0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: MaterialButton(
           onPressed: onPressed,
-
-          // padding inside
           padding: const EdgeInsets.all(25),
-
-          // color
-          color: isFollowing
-              ? Theme.of(context).colorScheme.primary
-              : Colors.blue,
-
-          // text
+          color: isEdit
+              ? Theme.of(context)
+                    .colorScheme
+                    .primary // Edit button color (can adjust)
+              : (isFollowing!
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.blue),
           child: Text(
-            isFollowing ? "Unfollow" : "Follow",
+            isEdit ? "Edit Profile" : (isFollowing! ? "Unfollow" : "Follow"),
             style: TextStyle(
               color: Theme.of(context).colorScheme.secondary,
               fontWeight: FontWeight.bold,

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
@@ -8,6 +7,7 @@ import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.
 import 'package:social_media_clone/features/post/presentation/cubits/post_states.dart';
 import 'package:social_media_clone/features/profile/presentation/components/bio_box.dart';
 import 'package:social_media_clone/features/profile/presentation/components/follow_button.dart';
+import 'package:social_media_clone/features/profile/presentation/components/profile_avatar.dart';
 import 'package:social_media_clone/features/profile/presentation/components/profile_stats.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_states.dart';
@@ -100,13 +100,8 @@ class _ProfilePageState extends State<ProfilePage> {
             actions: [
               if (isOwnProfile)
                 IconButton(
-                  icon: const Icon(Icons.settings),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditProfilePage(user: user),
-                    ),
-                  ),
+                  icon: const Icon(Icons.logout),
+                  onPressed: () => context.read<AuthCubit>().logout(),
                 ),
             ],
           ),
@@ -137,26 +132,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 25),
 
                   // profile picture
-                  CachedNetworkImage(
-                    imageUrl: user.profileImageUrl,
-                    placeholder: (context, url) =>
-                        const CircularProgressIndicator(),
-                    errorWidget: (context, url, error) => Icon(
-                      Icons.person,
-                      size: 72,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    imageBuilder: (context, imageProvider) => Container(
-                      height: 120,
-                      width: 120,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
+                  SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: ProfileAvatar(imageUrl: user.profileImageUrl),
                   ),
 
                   const SizedBox(height: 25),
@@ -185,11 +164,23 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 25),
 
                   // follow button
-                  if (!isOwnProfile)
-                    FollowButton(
-                      onPressed: followButtonPressed,
-                      isFollowing: user.followers.contains(currentUser!.uid),
-                    ),
+                  isOwnProfile
+                      ? ProfileActionButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EditProfilePage(user: user),
+                              ),
+                            );
+                          },
+                        )
+                      : ProfileActionButton(
+                          onPressed: followButtonPressed,
+                          isFollowing: user.followers.contains(
+                            currentUser!.uid,
+                          ),
+                        ),
 
                   const SizedBox(height: 25),
 

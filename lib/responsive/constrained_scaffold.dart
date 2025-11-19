@@ -13,12 +13,14 @@ class ConstrainedScaffold extends StatelessWidget {
   final Widget body;
   final PreferredSizeWidget? appBar;
   final Widget? drawer;
+  final Widget? bottomNavigationBar;
 
   const ConstrainedScaffold({
     super.key,
     required this.body,
     this.appBar,
     this.drawer,
+    this.bottomNavigationBar,
   });
 
   @override
@@ -32,6 +34,7 @@ class ConstrainedScaffold extends StatelessWidget {
           child: body,
         ),
       ),
+      bottomNavigationBar: bottomNavigationBar,
     );
   }
 }

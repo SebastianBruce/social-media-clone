@@ -10,6 +10,7 @@ import 'package:social_media_clone/features/post/domain/entities/comment.dart';
 import 'package:social_media_clone/features/post/domain/entities/post.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_states.dart';
+import 'package:social_media_clone/features/profile/presentation/components/profile_avatar.dart';
 import 'package:social_media_clone/features/profile/domain/entities/profile_user.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_cubit.dart';
 import 'package:social_media_clone/features/profile/presentation/pages/profile_page.dart';
@@ -145,7 +146,7 @@ class _PostTileState extends State<PostTile> {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       postId: widget.post.id,
       userId: currentUser!.uid,
-      userName: currentUser!.name,
+      userName: currentUser!.username,
       text: commentTextController.text,
       timestamp: DateTime.now(),
     );
@@ -209,34 +210,28 @@ class _PostTileState extends State<PostTile> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   // profile pic
-                  postUser?.profileImageUrl != null
-                      ? CachedNetworkImage(
-                          imageUrl: postUser!.profileImageUrl,
-                          errorWidget: (context, url, error) =>
-                              const Icon(Icons.person),
-                          imageBuilder: (context, imageProvider) => Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: DecorationImage(
-                                image: imageProvider,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        )
-                      : const Icon(Icons.person),
+                  ProfileAvatar(imageUrl: postUser?.profileImageUrl),
 
                   const SizedBox(width: 10),
 
                   // name
-                  Text(
-                    "@${widget.post.handle}",
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.inversePrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.post.userName,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.inversePrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "@${widget.post.handle}",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.inversePrimary,
+                        ),
+                      ),
+                    ],
                   ),
 
                   const Spacer(),
@@ -344,7 +339,7 @@ class _PostTileState extends State<PostTile> {
               children: [
                 // userName
                 Text(
-                  widget.post.userName,
+                  "@${widget.post.handle}",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
 

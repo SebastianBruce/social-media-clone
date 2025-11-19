@@ -69,7 +69,7 @@ class _CommentTileState extends State<CommentTile> {
         children: [
           // name
           Text(
-            widget.comment.userName,
+            "@${widget.comment.userName}",
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
 

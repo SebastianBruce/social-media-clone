@@ -4,7 +4,7 @@ import 'package:social_media_clone/features/auth/data/firebase_auth_repo.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_states.dart';
 import 'package:social_media_clone/features/auth/presentation/pages/auth_page.dart';
-import 'package:social_media_clone/features/home/presentation/pages/home_page.dart';
+import 'package:social_media_clone/features/main_page.dart';
 import 'package:social_media_clone/features/post/data/firebase_post_repo.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/profile/data/firebase_profile_repo.dart';
@@ -108,7 +108,7 @@ class MyApp extends StatelessWidget {
 
               // authenticated -> home page
               if (authState is Authenticated) {
-                return const HomePage();
+                return const MainPage();
               }
               // loading...
               else {
