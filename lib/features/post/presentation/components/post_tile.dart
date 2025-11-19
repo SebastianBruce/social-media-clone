@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/presentation/components/my_text_field.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
-import 'package:social_media_clone/features/post/components/comment_tile.dart';
+import 'package:social_media_clone/features/post/presentation/components/comment_tile.dart';
 import 'package:social_media_clone/features/post/domain/entities/comment.dart';
 import 'package:social_media_clone/features/post/domain/entities/post.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
@@ -339,7 +339,7 @@ class _PostTileState extends State<PostTile> {
               children: [
                 // userName
                 Text(
-                  "@${widget.post.handle}",
+                  widget.post.handle,
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
 

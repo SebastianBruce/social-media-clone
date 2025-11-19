@@ -7,27 +7,34 @@ class ProfileAvatar extends StatelessWidget {
 
   const ProfileAvatar({super.key, required this.imageUrl, this.size = 40});
 
+  Widget _defaultAvatar() {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        image: const DecorationImage(
+          image: AssetImage('assets/images/default-profile-icon.jpg'),
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (imageUrl == null || imageUrl!.trim().isEmpty) {
+      return _defaultAvatar();
+    }
+
     return CachedNetworkImage(
-      imageUrl: imageUrl ?? '',
+      imageUrl: imageUrl!,
       placeholder: (context, url) => SizedBox(
         height: size,
         width: size,
-        child: const CircularProgressIndicator(),
+        child: const Center(child: CircularProgressIndicator()),
       ),
-      errorWidget: (context, url, error) => Container(
-        height: size,
-        width: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[200],
-          image: const DecorationImage(
-            image: AssetImage('assets/images/default-profile-icon.jpg'),
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
+      errorWidget: (context, url, error) => _defaultAvatar(),
       imageBuilder: (context, imageProvider) => Container(
         height: size,
         width: size,

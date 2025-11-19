@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:social_media_clone/features/post/components/post_tile.dart';
+import 'package:social_media_clone/features/post/presentation/components/post_tile.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_states.dart';
 
@@ -32,15 +32,22 @@ class _HomePageState extends State<HomePage> {
             return const Center(child: Text("No posts available"));
           }
 
-          return ListView.builder(
-            itemCount: allPosts.length,
-            itemBuilder: (context, index) {
-              final post = allPosts[index];
-              return PostTile(
-                post: post,
-                onDeletePressed: () => postCubit.deletePost(post.id),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              await postCubit.fetchAllPosts();
             },
+            child: ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(), // important
+              itemCount: allPosts.length,
+              itemBuilder: (context, index) {
+                final post = allPosts[index];
+                return PostTile(
+                  key: ValueKey(post.id),
+                  post: post,
+                  onDeletePressed: () => postCubit.deletePost(post.id),
+                );
+              },
+            ),
           );
         } else if (state is PostsError) {
           return Center(child: Text(state.message));

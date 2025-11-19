@@ -60,8 +60,25 @@ class PostCubit extends Cubit<PostState> {
   // delete a post
   Future<void> deletePost(String postId) async {
     try {
+      final currentState = state;
+
+      // 1. Optimistically update UI
+      if (currentState is PostsLoaded) {
+        final updatedPosts = currentState.posts
+            .where((p) => p.id != postId)
+            .toList();
+
+        emit(PostsLoaded(updatedPosts));
+      }
+
+      // 2. Delete in Firestore
       await postRepo.deletePost(postId);
-    } catch (e) {}
+
+      // 3. Re-fetch to stay in sync
+      // await fetchAllPosts();
+    } catch (e) {
+      emit(PostsError("Failed to delete post: $e"));
+    }
   }
 
   // toggle like on a post

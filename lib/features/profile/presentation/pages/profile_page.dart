@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
-import 'package:social_media_clone/features/post/components/post_tile.dart';
+import 'package:social_media_clone/features/post/presentation/components/post_tile.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_states.dart';
 import 'package:social_media_clone/features/profile/presentation/components/bio_box.dart';
@@ -117,123 +117,131 @@ class _ProfilePageState extends State<ProfilePage> {
                     .toList();
               }
 
-              return ListView(
-                children: [
-                  // email
-                  Center(
-                    child: Text(
-                      "@${user.username}",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // profile picture
-                  SizedBox(
-                    width: 120,
-                    height: 120,
-                    child: ProfileAvatar(imageUrl: user.profileImageUrl),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  // stats
-                  ProfileStats(
-                    postCount: userPosts.length,
-                    followerCount: user.followers.length,
-                    followingCount: user.following.length,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FollowerPage(
-                            followers: user.followers,
-                            following: user.following,
-                          ),
+              return RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    profileCubit.fetchUserProfile(widget.uid),
+                    context.read<PostCubit>().fetchAllPosts(),
+                  ]);
+                },
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    // email
+                    Center(
+                      child: Text(
+                        "@${user.username}",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
                         ),
-                      ).then((_) {
-                        // REFRESH when returning from follower page
-                        profileCubit.fetchUserProfile(widget.uid);
-                      });
-                    },
-                  ),
+                      ),
+                    ),
 
-                  const SizedBox(height: 25),
+                    const SizedBox(height: 25),
 
-                  // follow button
-                  isOwnProfile
-                      ? ProfileActionButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => EditProfilePage(user: user),
-                              ),
-                            );
-                          },
-                        )
-                      : ProfileActionButton(
-                          onPressed: followButtonPressed,
-                          isFollowing: user.followers.contains(
-                            currentUser!.uid,
+                    // profile picture
+                    SizedBox(
+                      width: 120,
+                      height: 120,
+                      child: ProfileAvatar(imageUrl: user.profileImageUrl),
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    // stats
+                    ProfileStats(
+                      postCount: userPosts.length,
+                      followerCount: user.followers.length,
+                      followingCount: user.following.length,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FollowerPage(
+                              followers: user.followers,
+                              following: user.following,
+                            ),
                           ),
-                        ),
-
-                  const SizedBox(height: 25),
-
-                  // bio
-                  Padding(
-                    padding: const EdgeInsets.only(left: 25.0),
-                    child: Text(
-                      "Bio",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  BioBox(text: user.bio),
-
-                  const SizedBox(height: 25),
-
-                  // posts header
-                  Padding(
-                    padding: const EdgeInsets.only(left: 25.0),
-                    child: Text(
-                      "Posts",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // posts list
-                  if (postState is PostsLoading)
-                    const Center(child: CircularProgressIndicator())
-                  else if (userPosts.isEmpty)
-                    const Center(child: Text("No posts..."))
-                  else
-                    ListView.builder(
-                      itemCount: userPosts.length,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemBuilder: (context, index) {
-                        final post = userPosts[index];
-                        return PostTile(
-                          post: post,
-                          onDeletePressed: () =>
-                              context.read<PostCubit>().deletePost(post.id),
-                        );
+                        ).then((_) {
+                          profileCubit.fetchUserProfile(widget.uid);
+                        });
                       },
                     ),
-                ],
+
+                    const SizedBox(height: 25),
+
+                    // follow / edit button
+                    isOwnProfile
+                        ? ProfileActionButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EditProfilePage(user: user),
+                                ),
+                              );
+                            },
+                          )
+                        : ProfileActionButton(
+                            onPressed: followButtonPressed,
+                            isFollowing: user.followers.contains(
+                              currentUser!.uid,
+                            ),
+                          ),
+
+                    const SizedBox(height: 25),
+
+                    // bio
+                    Padding(
+                      padding: const EdgeInsets.only(left: 25.0),
+                      child: Text(
+                        "Bio",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    BioBox(text: user.bio),
+
+                    const SizedBox(height: 25),
+
+                    // posts header
+                    Padding(
+                      padding: const EdgeInsets.only(left: 25.0),
+                      child: Text(
+                        "Posts",
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // posts ListView
+                    if (postState is PostsLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else if (userPosts.isEmpty)
+                      const Center(child: Text("No posts..."))
+                    else
+                      ListView.builder(
+                        itemCount: userPosts.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          final post = userPosts[index];
+                          return PostTile(
+                            post: post,
+                            onDeletePressed: () =>
+                                context.read<PostCubit>().deletePost(post.id),
+                          );
+                        },
+                      ),
+                  ],
+                ),
               );
             },
           ),
