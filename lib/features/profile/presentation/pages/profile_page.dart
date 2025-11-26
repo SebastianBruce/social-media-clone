@@ -237,6 +237,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             post: post,
                             onDeletePressed: () =>
                                 context.read<PostCubit>().deletePost(post.id),
+                            onReport: () => context
+                                .read<PostCubit>()
+                                .reportPost(post, currentUser!),
                           );
                         },
                       ),

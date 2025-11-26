@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
+import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:social_media_clone/features/post/presentation/components/post_tile.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/post/presentation/cubits/post_states.dart';
@@ -12,7 +14,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final authCubit = context.read<AuthCubit>();
   late final postCubit = context.read<PostCubit>();
+
+  // current user
+  late AppUser? currentUser = authCubit.currentUser;
 
   @override
   void initState() {
@@ -45,6 +51,7 @@ class _HomePageState extends State<HomePage> {
                   key: ValueKey(post.id),
                   post: post,
                   onDeletePressed: () => postCubit.deletePost(post.id),
+                  onReport: () => postCubit.reportPost(post, currentUser!),
                 );
               },
             ),

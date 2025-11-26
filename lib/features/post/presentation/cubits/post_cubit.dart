@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/post/domain/entities/comment.dart';
 import 'package:social_media_clone/features/post/domain/entities/post.dart';
 import 'package:social_media_clone/features/post/domain/repos/post_repo.dart';
@@ -108,6 +109,14 @@ class PostCubit extends Cubit<PostState> {
       await fetchAllPosts();
     } catch (e) {
       emit(PostsError("Failed to delete comment: $e"));
+    }
+  }
+
+  Future<void> reportPost(Post post, AppUser currentUser) async {
+    try {
+      await postRepo.reportPost(post, currentUser);
+    } catch (e) {
+      emit(PostsError("Failed to report post: $e"));
     }
   }
 }

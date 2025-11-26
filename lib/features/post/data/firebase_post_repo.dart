@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/post/domain/entities/comment.dart';
 import 'package:social_media_clone/features/post/domain/entities/post.dart';
 import 'package:social_media_clone/features/post/domain/repos/post_repo.dart';
@@ -139,5 +140,23 @@ class FirebasePostRepo implements PostRepo {
     } catch (e) {
       throw Exception("Error deleting comment $e");
     }
+  }
+
+  // report post
+  @override
+  Future<void> reportPost(Post post, AppUser currentUser) async {
+    // get current user id
+    final currentUserId = currentUser.uid;
+
+    // create a report map
+    final report = {
+      'reportedBy': currentUserId,
+      'messageId': post.id,
+      'messageOwnerId': post.userId,
+      'timestamp': FieldValue.serverTimestamp(),
+    };
+
+    // update in firestore
+    await FirebaseFirestore.instance.collection("reports").add(report);
   }
 }

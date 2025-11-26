@@ -18,11 +18,13 @@ import 'package:social_media_clone/features/profile/presentation/pages/profile_p
 class PostTile extends StatefulWidget {
   final Post post;
   final void Function()? onDeletePressed;
+  final void Function()? onReport;
 
   const PostTile({
     super.key,
     required this.post,
     required this.onDeletePressed,
+    required this.onReport,
   });
 
   @override
@@ -189,6 +191,158 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
+  /*
+
+  SHOW OPTIONS
+
+  Case 1: This post belongs to current user
+  — Delete
+  — Cancel
+  
+  Case 2: This post does NOT belong to current user
+  — Report
+  - Block
+  — Cancel
+
+  */
+
+  // show options
+  void _showOptions() {
+    // check if this post is owned by the user or not
+    final bool isOwnPost = widget.post.userId == currentUser!.uid;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              // this post belongs to current user
+              if (isOwnPost)
+                // delete message button
+                ListTile(
+                  leading: const Icon(Icons.delete),
+                  title: const Text("Delete"),
+                  onTap: () async {
+                    // pop option box
+                    Navigator.pop(context);
+
+                    // handle delete action
+                    widget.onDeletePressed!();
+                  },
+                )
+              // this post does NOT belong to current user
+              else ...[
+                // report post button
+                ListTile(
+                  leading: const Icon(Icons.flag),
+                  title: const Text("Report"),
+                  onTap: () {
+                    // pop option box
+                    Navigator.pop(context);
+
+                    // handle report action
+                    _reportPostConfirmationBox();
+                  },
+                ),
+
+                // block user button
+                ListTile(
+                  leading: const Icon(Icons.block),
+                  title: const Text("Block User"),
+                  onTap: () {
+                    // pop option box
+                    Navigator.pop(context);
+
+                    // handle block action
+                    _blockUserConfirmationBox();
+                  },
+                ),
+              ],
+
+              // cancel button
+              ListTile(
+                leading: const Icon(Icons.cancel),
+                title: const Text("Cancel"),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // report post confirmation
+  void _reportPostConfirmationBox() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Report Post"),
+        content: const Text("Are you sure you want to report this post?"),
+        actions: [
+          // cancel button
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+
+          // report button
+          TextButton(
+            onPressed: () async {
+              // report user
+              widget.onReport!();
+
+              // close box
+              Navigator.pop(context);
+
+              // let user know it was successfully reported
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Message reported!")),
+              );
+            },
+            child: const Text("Report"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // block user confirmation
+  void _blockUserConfirmationBox() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Block User"),
+        content: const Text("Are you sure you want to block this user?"),
+        actions: [
+          // cancel button
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+
+          // block button
+          TextButton(
+            onPressed: () async {
+              // block user
+              // await databaseProvider.blockUser(widget.post.uid);
+
+              // close box
+              Navigator.pop(context);
+
+              // let user know user was successfully blocked
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("User blocked!")));
+            },
+            child: const Text("Block"),
+          ),
+        ],
+      ),
+    );
+  }
+
   // BUILD UI
   @override
   Widget build(BuildContext context) {
@@ -236,15 +390,14 @@ class _PostTileState extends State<PostTile> {
 
                   const Spacer(),
 
-                  // delete button
-                  if (isOwnPost)
-                    GestureDetector(
-                      onTap: showOptions,
-                      child: Icon(
-                        Icons.delete,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                  // options button
+                  GestureDetector(
+                    onTap: _showOptions,
+                    child: Icon(
+                      Icons.more_horiz,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
+                  ),
                 ],
               ),
             ),
