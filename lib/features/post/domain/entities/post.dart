@@ -9,7 +9,16 @@ class Post {
   final String text;
   final String imageUrl;
   final DateTime timestamp;
-  final List<String> likes; // store uids
+
+  /// load from the /Likes subcollection
+  final List<String> likes;
+
+  /// calculated at fetch time
+  final int likeCount;
+
+  /// not stored — used for UI
+  final bool isLikedByUser;
+
   final List<Comment> comments;
 
   Post({
@@ -22,9 +31,16 @@ class Post {
     required this.timestamp,
     required this.likes,
     required this.comments,
+    this.likeCount = 0,
+    this.isLikedByUser = false,
   });
 
-  Post copyWith({String? imageUrl}) {
+  Post copyWith({
+    String? imageUrl,
+    List<String>? likes,
+    int? likeCount,
+    bool? isLikedByUser,
+  }) {
     return Post(
       id: id,
       userId: userId,
@@ -33,12 +49,14 @@ class Post {
       text: text,
       imageUrl: imageUrl ?? this.imageUrl,
       timestamp: timestamp,
-      likes: likes,
+      likes: likes ?? this.likes,
+      likeCount: likeCount ?? this.likeCount,
+      isLikedByUser: isLikedByUser ?? this.isLikedByUser,
       comments: comments,
     );
   }
 
-  // convert post -> json
+  // Convert post -> JSON (NOTE: no likes saved)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -48,17 +66,17 @@ class Post {
       'text': text,
       'imageUrl': imageUrl,
       'timestamp': Timestamp.fromDate(timestamp),
-      'likes': likes,
+
+      // Likes REMOVED because now a subcollection
       'comments': comments.map((comment) => comment.toJson()).toList(),
     };
   }
 
-  // convert json -> post
+  // Convert JSON -> Post (likes will be manually loaded later)
   factory Post.fromJson(Map<String, dynamic> json) {
-    // prepare comments
     final List<Comment> comments =
         (json['comments'] as List<dynamic>?)
-            ?.map((commentJson) => Comment.fromJson(commentJson))
+            ?.map((c) => Comment.fromJson(c))
             .toList() ??
         [];
 
@@ -70,7 +88,12 @@ class Post {
       text: json['text'],
       imageUrl: json['imageUrl'],
       timestamp: (json['timestamp'] as Timestamp).toDate(),
-      likes: List<String>.from(json['likes'] ?? []),
+
+      // EMPTY because likes come from subcollection
+      likes: [],
+      likeCount: 0,
+      isLikedByUser: false,
+
       comments: comments,
     );
   }

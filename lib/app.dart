@@ -65,19 +65,21 @@ class MyApp extends StatelessWidget {
               AuthCubit(authRepo: firebaseAuthRepo)..checkAuth(),
         ),
 
-        // profile cubit
-        BlocProvider<ProfileCubit>(
-          create: (context) => ProfileCubit(
-            profileRepo: firebaseProfileRepo,
-            storageRepo: firebaseStorageRepo,
-          ),
-        ),
-
         // post cubit
         BlocProvider<PostCubit>(
           create: (context) => PostCubit(
             postRepo: firebasePostRepo,
             storageRepo: firebaseStorageRepo,
+            authCubit: context.read<AuthCubit>(),
+          ),
+        ),
+
+        // profile cubit
+        BlocProvider<ProfileCubit>(
+          create: (context) => ProfileCubit(
+            profileRepo: firebaseProfileRepo,
+            storageRepo: firebaseStorageRepo,
+            postCubit: context.read<PostCubit>(),
           ),
         ),
 

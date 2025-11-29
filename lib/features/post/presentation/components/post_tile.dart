@@ -1,7 +1,10 @@
+// lib\features\post\presentation\components\post_tile.dart
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/auth/presentation/components/my_text_field.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
@@ -44,13 +47,17 @@ class _PostTileState extends State<PostTile> {
   // post user
   ProfileUser? postUser;
 
-  // on startup
+  // NEW LIKE SYSTEM
+  int likeCount = 0;
+  bool isLiked = false;
+
   @override
   void initState() {
     super.initState();
 
     getCurrentUser();
     fetchPostUser();
+    listenToLikes();
   }
 
   void getCurrentUser() {
@@ -69,43 +76,62 @@ class _PostTileState extends State<PostTile> {
   }
 
   /*
-
+  
   LIKES
-
+  
   */
+
+  // real-time listener for like count + isLiked
+  void listenToLikes() {
+    final likesRef = FirebaseFirestore.instance
+        .collection("posts")
+        .doc(widget.post.id)
+        .collection("Likes");
+
+    likesRef.snapshots().listen((snapshot) {
+      setState(() {
+        likeCount = snapshot.docs.length;
+        isLiked = snapshot.docs.any((doc) => doc.id == currentUser!.uid);
+      });
+    });
+  }
 
   // user tapped like button
   void toggleLikePost() {
-    final isLiked = widget.post.likes.contains(currentUser!.uid);
+    final bool wasLiked = isLiked;
 
-    // optimistically like & update UI
+    // optimistic UI
     setState(() {
-      if (isLiked) {
-        widget.post.likes.remove(currentUser!.uid); // like
+      if (wasLiked) {
+        likeCount--;
+        isLiked = false;
       } else {
-        widget.post.likes.add(currentUser!.uid); // unlike
+        likeCount++;
+        isLiked = true;
       }
     });
 
-    // update like
+    // update like in backend
     postCubit.toggleLikePost(widget.post.id, currentUser!.uid).catchError((
       error,
     ) {
-      // if there's am error, revert back to original values
+      // revert UI if failed
       setState(() {
-        if (isLiked) {
-          widget.post.likes.add(currentUser!.uid); // revert unlike
+        if (wasLiked) {
+          likeCount++;
+          isLiked = true;
         } else {
-          widget.post.likes.remove(currentUser!.uid); // revert like
+          likeCount--;
+          isLiked = false;
         }
       });
     });
   }
 
   /*
-
+  
   COMMENTS
-
+  
   */
 
   // comment text controller
@@ -192,23 +218,12 @@ class _PostTileState extends State<PostTile> {
   }
 
   /*
-
-  SHOW OPTIONS
-
-  Case 1: This post belongs to current user
-  — Delete
-  — Cancel
   
-  Case 2: This post does NOT belong to current user
-  — Report
-  - Block
-  — Cancel
-
+  SHOW OPTIONS
+  
   */
 
-  // show options
   void _showOptions() {
-    // check if this post is owned by the user or not
     final bool isOwnPost = widget.post.userId == currentUser!.uid;
 
     showModalBottomSheet(
@@ -217,50 +232,35 @@ class _PostTileState extends State<PostTile> {
         return SafeArea(
           child: Wrap(
             children: [
-              // this post belongs to current user
               if (isOwnPost)
-                // delete message button
                 ListTile(
                   leading: const Icon(Icons.delete),
                   title: const Text("Delete"),
                   onTap: () async {
-                    // pop option box
                     Navigator.pop(context);
-
-                    // handle delete action
                     widget.onDeletePressed!();
                   },
                 )
-              // this post does NOT belong to current user
               else ...[
-                // report post button
                 ListTile(
                   leading: const Icon(Icons.flag),
                   title: const Text("Report"),
                   onTap: () {
-                    // pop option box
                     Navigator.pop(context);
-
-                    // handle report action
                     _reportPostConfirmationBox();
                   },
                 ),
 
-                // block user button
                 ListTile(
                   leading: const Icon(Icons.block),
                   title: const Text("Block User"),
                   onTap: () {
-                    // pop option box
                     Navigator.pop(context);
-
-                    // handle block action
                     _blockUserConfirmationBox();
                   },
                 ),
               ],
 
-              // cancel button
               ListTile(
                 leading: const Icon(Icons.cancel),
                 title: const Text("Cancel"),
@@ -273,7 +273,6 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
-  // report post confirmation
   void _reportPostConfirmationBox() {
     showDialog(
       context: context,
@@ -281,22 +280,16 @@ class _PostTileState extends State<PostTile> {
         title: const Text("Report Post"),
         content: const Text("Are you sure you want to report this post?"),
         actions: [
-          // cancel button
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
 
-          // report button
           TextButton(
             onPressed: () async {
-              // report user
               widget.onReport!();
-
-              // close box
               Navigator.pop(context);
 
-              // let user know it was successfully reported
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Message reported!")),
               );
@@ -308,7 +301,6 @@ class _PostTileState extends State<PostTile> {
     );
   }
 
-  // block user confirmation
   void _blockUserConfirmationBox() {
     showDialog(
       context: context,
@@ -316,22 +308,20 @@ class _PostTileState extends State<PostTile> {
         title: const Text("Block User"),
         content: const Text("Are you sure you want to block this user?"),
         actions: [
-          // cancel button
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
 
-          // block button
           TextButton(
             onPressed: () async {
-              // block user
-              // await databaseProvider.blockUser(widget.post.uid);
+              await profileCubit.toggleBlockUser(
+                currentUser!.uid,
+                widget.post.userId,
+              );
 
-              // close box
               Navigator.pop(context);
 
-              // let user know user was successfully blocked
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text("User blocked!")));
@@ -363,12 +353,10 @@ class _PostTileState extends State<PostTile> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  // profile pic
                   ProfileAvatar(imageUrl: postUser?.profileImageUrl),
 
                   const SizedBox(width: 10),
 
-                  // name
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -390,7 +378,6 @@ class _PostTileState extends State<PostTile> {
 
                   const Spacer(),
 
-                  // options button
                   GestureDetector(
                     onTap: _showOptions,
                     child: Icon(
@@ -402,11 +389,13 @@ class _PostTileState extends State<PostTile> {
               ),
             ),
           ),
+
+          // double tap to like
           GestureDetector(
             onDoubleTap: () {
-              if (!widget.post.likes.contains(currentUser!.uid)) {
+              if (!isLiked) {
                 toggleLikePost();
-              } else {}
+              }
             },
             child: CachedNetworkImage(
               imageUrl: widget.post.imageUrl,
@@ -427,14 +416,11 @@ class _PostTileState extends State<PostTile> {
                   width: 50,
                   child: Row(
                     children: [
-                      // like button
                       GestureDetector(
                         onTap: toggleLikePost,
                         child: Icon(
-                          widget.post.likes.contains(currentUser!.uid)
-                              ? Icons.favorite
-                              : Icons.favorite_border,
-                          color: widget.post.likes.contains(currentUser!.uid)
+                          isLiked ? Icons.favorite : Icons.favorite_border,
+                          color: isLiked
                               ? Colors.red
                               : Theme.of(context).colorScheme.primary,
                         ),
@@ -442,9 +428,8 @@ class _PostTileState extends State<PostTile> {
 
                       const SizedBox(width: 5),
 
-                      // like count
                       Text(
-                        widget.post.likes.length.toString(),
+                        likeCount.toString(),
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 12,
@@ -454,7 +439,6 @@ class _PostTileState extends State<PostTile> {
                   ),
                 ),
 
-                // comment button
                 GestureDetector(
                   onTap: openNewCommentBox,
                   child: Icon(
@@ -475,7 +459,6 @@ class _PostTileState extends State<PostTile> {
 
                 const Spacer(),
 
-                // timestamp
                 Text(
                   DateFormat(
                     'MM/dd/yyyy - hh:mm a',
@@ -490,7 +473,6 @@ class _PostTileState extends State<PostTile> {
             padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20),
             child: Row(
               children: [
-                // userName
                 Text(
                   widget.post.handle,
                   style: const TextStyle(fontWeight: FontWeight.bold),
@@ -498,7 +480,6 @@ class _PostTileState extends State<PostTile> {
 
                 const SizedBox(width: 10),
 
-                // text
                 Text(widget.post.text),
               ],
             ),
@@ -507,39 +488,29 @@ class _PostTileState extends State<PostTile> {
           // COMMENT SECTION
           BlocBuilder<PostCubit, PostState>(
             builder: (context, state) {
-              // LOADED
               if (state is PostsLoaded) {
-                // final individual post
                 final post = state.posts.firstWhere(
                   (post) => (post.id == widget.post.id),
                 );
 
                 if (post.comments.isNotEmpty) {
-                  // how many comments to show
                   int showCommentCount = post.comments.length;
 
-                  // comment section
                   return ListView.builder(
                     itemCount: showCommentCount,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemBuilder: (context, index) {
-                      // get individual comment
                       final comment = post.comments[index];
-
-                      // comment tile UI
                       return CommentTile(comment: comment);
                     },
                   );
                 }
               }
 
-              // LOADING..
               if (state is PostsLoading) {
                 return const Center(child: CircularProgressIndicator());
-              }
-              // ERROR
-              else if (state is PostsError) {
+              } else if (state is PostsError) {
                 return Center(child: Text(state.message));
               } else {
                 return const SizedBox();

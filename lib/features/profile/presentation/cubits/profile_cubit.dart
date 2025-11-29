@@ -1,6 +1,9 @@
+// lib\features\profile\presentation\cubits\profile_cubit.dart
+
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_media_clone/features/post/presentation/cubits/post_cubit.dart';
 import 'package:social_media_clone/features/profile/domain/entities/profile_user.dart';
 import 'package:social_media_clone/features/profile/domain/repos/profile_repo.dart';
 import 'package:social_media_clone/features/profile/presentation/cubits/profile_states.dart';
@@ -9,9 +12,13 @@ import 'package:social_media_clone/features/storage/domain/storage_repo.dart';
 class ProfileCubit extends Cubit<ProfileState> {
   final ProfileRepo profileRepo;
   final StorageRepo storageRepo;
+  final PostCubit postCubit;
 
-  ProfileCubit({required this.profileRepo, required this.storageRepo})
-    : super(ProfileInitial());
+  ProfileCubit({
+    required this.profileRepo,
+    required this.storageRepo,
+    required this.postCubit,
+  }) : super(ProfileInitial());
 
   // fetch user profile using repo -> useful for loading single profile pages
   Future<void> fetchUserProfile(String uid) async {
@@ -104,5 +111,23 @@ class ProfileCubit extends Cubit<ProfileState> {
     } catch (e) {
       emit(ProfileError("Error toggling follow: $e"));
     }
+  }
+
+  // block user
+  Future<void> toggleBlockUser(
+    String currentUserId,
+    String targetUserId,
+  ) async {
+    try {
+      await profileRepo.toggleBlockUser(currentUserId, targetUserId);
+      postCubit.fetchAllPosts();
+    } catch (e) {
+      emit(ProfileError("Error blocking follow: $e"));
+    }
+  }
+
+  // check if a user is blocked
+  Future<bool> isUserBlocked(String currentUid, String targetUid) async {
+    return await profileRepo.isUserBlocked(currentUid, targetUid);
   }
 }

@@ -1,3 +1,5 @@
+// lib\features\post\data\firebase_post_repo.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
 import 'package:social_media_clone/features/post/domain/entities/comment.dart';
@@ -26,19 +28,52 @@ class FirebasePostRepo implements PostRepo {
   }
 
   @override
-  Future<List<Post>> fetchAllPosts() async {
+  Future<List<Post>> fetchAllPosts(String currentUid) async {
     try {
-      // get all posts with most recent posts at the top
+      // 1. Load blocked user IDs
+      final blockedSnapshot = await firestore
+          .collection('users')
+          .doc(currentUid)
+          .collection('BlockedUsers')
+          .get();
+
+      final blockedUserIds = blockedSnapshot.docs.map((d) => d.id).toList();
+
+      // 2. Fetch all posts
       final postsSnapshot = await postsCollection
           .orderBy('timestamp', descending: true)
           .get();
 
-      // convert each firestore document from json -> list of posts
-      final List<Post> allPosts = postsSnapshot.docs
+      final allPosts = postsSnapshot.docs
           .map((doc) => Post.fromJson(doc.data() as Map<String, dynamic>))
           .toList();
 
-      return allPosts;
+      // 3. Get all unique authors
+      final authorIds = allPosts.map((p) => p.userId).toSet().toList();
+
+      // 4. Batch fetch each author's BlockedUsers once
+      final Map<String, Set<String>> blockedUsersMap = {};
+
+      for (final authorId in authorIds) {
+        final blockedSnap = await firestore
+            .collection('users')
+            .doc(authorId)
+            .collection('BlockedUsers')
+            .get();
+
+        blockedUsersMap[authorId] = blockedSnap.docs.map((d) => d.id).toSet();
+      }
+
+      // 5. Filter out posts where author has blocked currentUid
+      final filtered = allPosts
+          .where(
+            (post) =>
+                !(blockedUsersMap[post.userId]?.contains(currentUid) ?? false),
+          )
+          .where((post) => !blockedUserIds.contains(post.userId))
+          .toList();
+
+      return filtered;
     } catch (e) {
       throw Exception("Error fetching posts: $e");
     }
@@ -66,26 +101,19 @@ class FirebasePostRepo implements PostRepo {
   @override
   Future<void> toggleLikePost(String postId, String userId) async {
     try {
-      // get the post document from firestore
-      final postDoc = await postsCollection.doc(postId).get();
+      final likeRef = postsCollection
+          .doc(postId)
+          .collection("Likes")
+          .doc(userId);
 
-      if (postDoc.exists) {
-        final post = Post.fromJson(postDoc.data() as Map<String, dynamic>);
+      final likeDoc = await likeRef.get();
 
-        // check if user has already liked this post
-        final hasLiked = post.likes.contains(userId);
-
-        // update the likes list
-        if (hasLiked) {
-          post.likes.remove(userId); // unlike
-        } else {
-          post.likes.add(userId); // like
-        }
-
-        // update the post document with new liked list
-        await postsCollection.doc(postId).update({'likes': post.likes});
+      if (likeDoc.exists) {
+        // UNLIKE
+        await likeRef.delete();
       } else {
-        throw Exception("Post not found");
+        // LIKE
+        await likeRef.set({'createdAt': FieldValue.serverTimestamp()});
       }
     } catch (e) {
       throw Exception("Error toggling like: $e");

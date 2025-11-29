@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';
+import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
 import 'package:social_media_clone/features/post/domain/entities/comment.dart';
 import 'package:social_media_clone/features/post/domain/entities/post.dart';
 import 'package:social_media_clone/features/post/domain/repos/post_repo.dart';
@@ -10,9 +11,13 @@ import 'package:social_media_clone/features/storage/domain/storage_repo.dart';
 class PostCubit extends Cubit<PostState> {
   final PostRepo postRepo;
   final StorageRepo storageRepo;
+  final AuthCubit authCubit;
 
-  PostCubit({required this.postRepo, required this.storageRepo})
-    : super(PostsInitial());
+  PostCubit({
+    required this.postRepo,
+    required this.storageRepo,
+    required this.authCubit,
+  }) : super(PostsInitial());
 
   // create a new post
   Future<void> createPost(
@@ -51,7 +56,8 @@ class PostCubit extends Cubit<PostState> {
   Future<void> fetchAllPosts() async {
     try {
       emit(PostsLoading());
-      final posts = await postRepo.fetchAllPosts();
+      final uid = authCubit.currentUser!.uid;
+      final posts = await postRepo.fetchAllPosts(uid);
       emit(PostsLoaded(posts));
     } catch (e) {
       emit(PostsError("Failed to fetch posts: $e"));

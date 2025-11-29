@@ -1,3 +1,5 @@
+// lib\features\profile\data\firebase_profile_repo.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_clone/features/profile/domain/entities/profile_user.dart';
 import 'package:social_media_clone/features/profile/domain/repos/profile_repo.dart';
@@ -8,34 +10,42 @@ class FirebaseProfileRepo implements ProfileRepo {
   @override
   Future<ProfileUser?> fetchUserProfile(String uid) async {
     try {
-      // get user document from firestore
       final userDoc = await firebaseFirestore
           .collection('users')
           .doc(uid)
           .get();
+      if (!userDoc.exists) return null;
 
-      if (userDoc.exists) {
-        final userData = userDoc.data();
+      final userData = userDoc.data();
+      if (userData == null) return null;
 
-        if (userData != null) {
-          // fetch followers & following
-          final followers = List<String>.from(userData['followers'] ?? []);
-          final following = List<String>.from(userData['following'] ?? []);
+      // Load followers subcollection
+      final followersSnap = await firebaseFirestore
+          .collection('users')
+          .doc(uid)
+          .collection('Followers')
+          .get();
 
-          return ProfileUser(
-            uid: uid,
-            email: userData['email'],
-            name: userData['name'],
-            username: userData['username'],
-            bio: userData['bio'] ?? '',
-            profileImageUrl: userData['profileImageUrl'].toString(),
-            followers: followers,
-            following: following,
-          );
-        }
-      }
+      // Load following subcollection
+      final followingSnap = await firebaseFirestore
+          .collection('users')
+          .doc(uid)
+          .collection('Following')
+          .get();
 
-      return null;
+      final followers = followersSnap.docs.map((d) => d.id).toList();
+      final following = followingSnap.docs.map((d) => d.id).toList();
+
+      return ProfileUser(
+        uid: uid,
+        email: userData['email'],
+        name: userData['name'],
+        username: userData['username'],
+        bio: userData['bio'] ?? '',
+        profileImageUrl: userData['profileImageUrl'] ?? "",
+        followers: followers,
+        following: following,
+      );
     } catch (e) {
       return null;
     }
@@ -60,46 +70,99 @@ class FirebaseProfileRepo implements ProfileRepo {
   @override
   Future<void> toggleFollow(String currentUid, String targetUid) async {
     try {
-      final currentUserDoc = await firebaseFirestore
+      final currentFollowingRef = firebaseFirestore
           .collection('users')
           .doc(currentUid)
-          .get();
-      final targetUserDoc = await firebaseFirestore
+          .collection('Following')
+          .doc(targetUid);
+
+      final targetFollowersRef = firebaseFirestore
           .collection('users')
           .doc(targetUid)
-          .get();
+          .collection('Followers')
+          .doc(currentUid);
 
-      if (currentUserDoc.exists && targetUserDoc.exists) {
-        final currentUserData = currentUserDoc.data();
-        final targetUserData = targetUserDoc.data();
+      final doc = await currentFollowingRef.get();
 
-        if (currentUserData != null && targetUserData != null) {
-          final List<String> currentFollowing = List<String>.from(
-            currentUserData['following'] ?? [],
-          );
+      if (doc.exists) {
+        // UNFOLLOW
+        await currentFollowingRef.delete();
+        await targetFollowersRef.delete();
+      } else {
+        // FOLLOW
+        await currentFollowingRef.set({
+          'createdAt': FieldValue.serverTimestamp(),
+        });
 
-          // check if the current user is already following the target user
-          if (currentFollowing.contains(targetUid)) {
-            // unfollow
-            await firebaseFirestore.collection('users').doc(currentUid).update({
-              'following': FieldValue.arrayRemove([targetUid]),
-            });
-
-            await firebaseFirestore.collection('users').doc(targetUid).update({
-              'followers': FieldValue.arrayRemove([currentUid]),
-            });
-          } else {
-            // follow
-            await firebaseFirestore.collection('users').doc(currentUid).update({
-              'following': FieldValue.arrayUnion([targetUid]),
-            });
-
-            await firebaseFirestore.collection('users').doc(targetUid).update({
-              'followers': FieldValue.arrayUnion([currentUid]),
-            });
-          }
-        }
+        await targetFollowersRef.set({
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
     } catch (e) {}
+  }
+
+  // Block user
+  @override
+  Future<void> toggleBlockUser(String currentUid, String targetUid) async {
+    try {
+      final blockedRef = firebaseFirestore
+          .collection('users')
+          .doc(currentUid)
+          .collection("BlockedUsers")
+          .doc(targetUid);
+
+      final doc = await blockedRef.get();
+
+      if (doc.exists) {
+        // UNBLOCK: remove from blocked list
+        await blockedRef.delete();
+      } else {
+        // BLOCK: add to blocked list
+        await blockedRef.set({'createdAt': FieldValue.serverTimestamp()});
+
+        // remove target from current user's followers/following
+        final currentFollowingRef = firebaseFirestore
+            .collection('users')
+            .doc(currentUid)
+            .collection('Following')
+            .doc(targetUid);
+        final currentFollowersRef = firebaseFirestore
+            .collection('users')
+            .doc(currentUid)
+            .collection('Followers')
+            .doc(targetUid);
+
+        await currentFollowingRef.delete();
+        await currentFollowersRef.delete();
+
+        // remove current user from target's followers/following
+        final targetFollowingRef = firebaseFirestore
+            .collection('users')
+            .doc(targetUid)
+            .collection('Following')
+            .doc(currentUid);
+        final targetFollowersRef = firebaseFirestore
+            .collection('users')
+            .doc(targetUid)
+            .collection('Followers')
+            .doc(currentUid);
+
+        await targetFollowingRef.delete();
+        await targetFollowersRef.delete();
+      }
+    } catch (e) {
+      throw Exception("Failed to toggle block: $e");
+    }
+  }
+
+  @override
+  Future<bool> isUserBlocked(String currentUid, String targetUid) async {
+    final doc = await firebaseFirestore
+        .collection('users')
+        .doc(currentUid)
+        .collection('BlockedUsers')
+        .doc(targetUid)
+        .get();
+    return doc.exists;
   }
 }
