@@ -1,3 +1,5 @@
+// lib\features\home\presentation\pages\home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/domain/entities/app_user.dart';

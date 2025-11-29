@@ -1,3 +1,5 @@
+// lib\features\main_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_media_clone/features/auth/presentation/cubits/auth_cubit.dart';
@@ -23,17 +25,15 @@ class _MainPageState extends State<MainPage> {
     final uid = context.read<AuthCubit>().currentUser!.uid;
 
     final List<Widget> pages = [
-      const HomePage(), // no scaffold inside
+      const HomePage(),
       const SearchPage(),
       const Center(child: Text("Placeholder Page")),
       ProfilePage(uid: uid),
     ];
 
     return Scaffold(
-      // ---------- DRAWER ALWAYS EXISTS HERE ----------
       drawer: const MyDrawer(),
 
-      // ---------- APP BAR ONLY ON HOME ----------
       appBar: _selectedIndex == 0
           ? AppBar(
               title: const Text("Home"),
@@ -53,7 +53,7 @@ class _MainPageState extends State<MainPage> {
             )
           : null,
 
-      body: pages[_selectedIndex],
+      body: IndexedStack(index: _selectedIndex, children: pages),
 
       bottomNavigationBar: MyCustomBottomNavBar(
         currentIndex: _selectedIndex,
