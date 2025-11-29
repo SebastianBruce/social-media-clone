@@ -70,6 +70,79 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+  void _showOptions() {
+    bool isOwnProfile = widget.uid == currentUser!.uid;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              if (isOwnProfile)
+                ListTile(
+                  leading: const Icon(Icons.logout),
+                  title: const Text("Logout"),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    () => context.read<AuthCubit>().logout();
+                  },
+                )
+              else ...[
+                ListTile(
+                  leading: const Icon(Icons.block),
+                  title: const Text("Block User"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _blockUserConfirmationBox();
+                  },
+                ),
+              ],
+
+              ListTile(
+                leading: const Icon(Icons.cancel),
+                title: const Text("Cancel"),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _blockUserConfirmationBox() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Block User"),
+        content: const Text("Are you sure you want to block this user?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+
+          TextButton(
+            onPressed: () async {
+              await profileCubit.toggleBlockUser(currentUser!.uid, widget.uid);
+
+              Navigator.pop(context);
+
+              profileCubit.fetchUserProfile(widget.uid);
+
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text("User blocked!")));
+            },
+            child: const Text("Block"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // BUILD UI
   @override
   Widget build(BuildContext context) {
     bool isOwnProfile = widget.uid == currentUser!.uid;
@@ -124,13 +197,13 @@ class _ProfilePageState extends State<ProfilePage> {
               //APP BAR
               appBar: AppBar(
                 title: Text(user.name),
+                centerTitle: true,
                 foregroundColor: Theme.of(context).colorScheme.primary,
                 actions: [
-                  if (isOwnProfile)
-                    IconButton(
-                      icon: const Icon(Icons.logout),
-                      onPressed: () => context.read<AuthCubit>().logout(),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz),
+                    onPressed: _showOptions,
+                  ),
                 ],
               ),
 

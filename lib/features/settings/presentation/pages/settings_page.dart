@@ -11,6 +11,8 @@ SETTINGS PAGE
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_media_clone/features/settings/presentation/components/my_settings_tile.dart';
+import 'package:social_media_clone/features/settings/presentation/pages/blocked_users_page.dart';
 import 'package:social_media_clone/responsive/constrained_scaffold.dart';
 import 'package:social_media_clone/themes/theme_cubit.dart';
 
@@ -24,7 +26,6 @@ class SettingsPage extends StatelessWidget {
     final themeCubit = context.watch<ThemeCubit>();
 
     // is dark mode
-
     bool isDarkMode = themeCubit.isDarkMode;
 
     // SCAFFOLD
@@ -32,14 +33,29 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text("Settings"), centerTitle: true),
       body: Column(
         children: [
-          // dark mode tile
-          ListTile(
-            title: Text("Dark Mode"),
-            trailing: CupertinoSwitch(
+          // Dark mode tile
+          MySettingsTile(
+            title: "Dark Mode",
+            action: CupertinoSwitch(
               value: isDarkMode,
               onChanged: (value) {
                 themeCubit.toggleTheme();
               },
+            ),
+          ),
+
+          // Block users tile
+          MySettingsTile(
+            title: "Blocked Users",
+            action: IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => BlockedUsersPage()),
+              ),
+              icon: Icon(
+                Icons.arrow_forward,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         ],

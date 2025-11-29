@@ -45,7 +45,7 @@ class ProfileActionButton extends StatelessWidget {
     } else if (isBlocked) {
       // blocked user -> show "Unblock"
       buttonText = "Unblock";
-      buttonColor = Colors.grey;
+      buttonColor = Theme.of(context).colorScheme.primary;
     } else {
       // follow/unfollow button
       buttonText = isFollowing! ? "Unfollow" : "Follow";
