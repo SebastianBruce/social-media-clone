@@ -1,3 +1,5 @@
+// lib\features\search\domain\search_repo.dart
+
 import 'package:social_media_clone/features/profile/domain/entities/profile_user.dart';
 
 abstract class SearchRepo {

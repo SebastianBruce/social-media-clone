@@ -55,11 +55,19 @@ class ProfileUser extends AppUser {
       uid: json['uid'],
       email: json['email'],
       name: json['name'],
-      username: json['username'],
+      username: json['username'] ?? '',
       bio: json['bio'] ?? '',
       profileImageUrl: json['profileImageUrl'] ?? '',
-      followers: List<String>.from(json['followers']),
-      following: List<String>.from(json['following']),
+      followers:
+          (json['followers'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      following:
+          (json['following'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
     );
   }
 }

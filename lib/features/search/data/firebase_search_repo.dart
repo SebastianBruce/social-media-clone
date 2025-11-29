@@ -1,3 +1,5 @@
+// lib\features\search\data\firebase_search_repo.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:social_media_clone/features/profile/domain/entities/profile_user.dart';
 import 'package:social_media_clone/features/search/domain/search_repo.dart';
